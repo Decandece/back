@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_validator_1 = require("express-validator");
 const ServicioLogin_1 = __importDefault(require("../service/ServicioLogin"));
-const Login_1 = require("../entity/Login");
+const Acceso_1 = __importDefault(require("../model/Acceso"));
 class LoginController {
     iniciarSesion(req, res) {
         const errores = (0, express_validator_1.validationResult)(req);
@@ -14,8 +14,10 @@ class LoginController {
         }
         else {
             const { correo, clave } = req.body;
-            const login = new Login_1.Login(correo, clave);
-            ServicioLogin_1.default.validarUsuario(login, res);
+            // Creamos un objeto Acceso con valores temporales para codUsuario y uuidAcceso
+            // que serán actualizados en el servicio si la autenticación es exitosa
+            const acceso = new Acceso_1.default(0, correo, clave, "");
+            ServicioLogin_1.default.validarUsuario(acceso, res);
         }
     }
 }

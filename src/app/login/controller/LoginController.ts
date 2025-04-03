@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { validationResult } from "express-validator";
 import ServicioLogin from "../service/ServicioLogin";
-import { Login } from "../model/Login";
+import Acceso from "../model/Acceso";
 
 class LoginController {
   public iniciarSesion(req: Request, res: Response): void {
@@ -10,8 +10,10 @@ class LoginController {
       res.status(400).json({ errores: errores.array() });
     } else {
       const { correo, clave } = req.body;
-      const login = new Login(correo, clave);
-      ServicioLogin.validarUsuario(login, res);
+      // Creamos un objeto Acceso con valores temporales para codUsuario y uuidAcceso
+      // que serán actualizados en el servicio si la autenticación es exitosa
+      const acceso = new Acceso(0, correo, clave, "");
+      ServicioLogin.validarUsuario(acceso, res);
     }
   }
 }

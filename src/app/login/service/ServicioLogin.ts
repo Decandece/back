@@ -1,11 +1,20 @@
 import { Response } from "express";
 import pool from "../../../config/connection/dbConnection";
 import { SQL_LOGIN } from "../repository/sql_login";
-import { Login, LoginResponse } from "../model/Login";
+import Acceso from "../model/Acceso";
+import Ingreso from "../model/Ingreso";
+
+// Interfaz para la respuesta del login
+interface LoginResponse {
+  codUsuario: number;
+  nombresUsuario: string;
+  apellidosUsuario: string;
+  nombreRol: string;
+}
 
 class ServicioLogin {
   public static async validarUsuario(
-    login: Login,
+    acceso: Acceso,
     res: Response
   ): Promise<any> {
     await pool
@@ -16,17 +25,27 @@ class ServicioLogin {
 
         // Verificamos si existe el usuario con las credenciales proporcionadas
         usuario = await consulta.oneOrNone(SQL_LOGIN.VALIDATE, [
-          login.correo,
-          login.clave,
+          acceso.correoAcceso,
+          acceso.claveAcceso,
         ]);
 
         if (usuario) {
           caso = 2;
+          // Actualizamos el codUsuario en el objeto acceso
+          acceso.codUsuario = usuario.codUsuario;
+          
+          // Creamos un objeto Ingreso para registrar el ingreso
+          const fechaActual = new Date();
+          const ingresoTemp = new Ingreso(0, usuario.codUsuario, fechaActual, fechaActual);
+          
           // Registrar ingreso con el código de usuario
-          const ingreso = await consulta.one(SQL_LOGIN.REGISTER_LOGIN, [
-            usuario.codUsuario,
+          const ingresoResult = await consulta.one(SQL_LOGIN.REGISTER_LOGIN, [
+            ingresoTemp.codUsuario,
           ]);
-          codIngreso = ingreso.cod_ingreso;
+          
+          codIngreso = ingresoResult.cod_ingreso;
+          // Actualizamos el codIngreso en el objeto ingreso
+          ingresoTemp.codIngreso = codIngreso;
         }
 
         return { caso, usuario, codIngreso };
@@ -40,12 +59,12 @@ class ServicioLogin {
             break;
 
           default:
-            const respuesta = new LoginResponse(
-              usuario.codUsuario,
-              usuario.nombresUsuario,
-              usuario.apellidosUsuario,
-              usuario.nombreRol
-            );
+            const respuesta: LoginResponse = {
+              codUsuario: usuario.codUsuario,
+              nombresUsuario: usuario.nombresUsuario,
+              apellidosUsuario: usuario.apellidosUsuario,
+              nombreRol: usuario.nombreRol
+            };
 
             res.status(200).json({
               mensaje: "Inicio de sesión exitoso",
@@ -65,6 +84,8 @@ class ServicioLogin {
           mensajeError = "Error de referencia: El usuario no existe";
         }
 
+        console.error("Error en el servicio de login:", miError);
+        
         res.status(500).json({
           respuesta: mensajeError,
         });
